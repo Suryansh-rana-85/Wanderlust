@@ -8,12 +8,6 @@ module.exports.listingSchema = Joi.object({
         location: Joi.string().required(),
         country: Joi.string().required(),
         price: Joi.number().required().min(0),
-        // image: Joi.object({
-        //     url: Joi.string().allow("", null),
-        // }).required(),
-
-        // this handles both object and string type 
-        // images, even when there is a null 
         image: Joi.alternatives().try(
             Joi.object({
                 url: Joi.string().allow("", null),
@@ -23,6 +17,8 @@ module.exports.listingSchema = Joi.object({
         
     }).required()
 });
+
+
 // Validation Schema for Reviews
 module.exports.reviewSchema = Joi.object({
     review: Joi.object({
