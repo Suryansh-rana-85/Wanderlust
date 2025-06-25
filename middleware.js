@@ -21,7 +21,7 @@ module.exports.saveRedirectUrl = (req, res, next) => {
     next();
 };
 
-// owner of the listing check
+// Owner of the listing check
 module.exports.isOwner = async (req, res, next) => {
     const { id } = req.params;
     const listing = await Listing.findById(id);
@@ -51,7 +51,7 @@ module.exports.validateListing = (req, res, next) => {
 
 // Validate review with JOI schema
 module.exports.validateReview = (req, res, next) => {
-    const { error } = reviewSchema.validate(req.body);
+    let { error } = reviewSchema.validate(req.body);
     if (error) {
         const errMsg = error.details.map(el => el.message).join(",");
         throw new ExpressError(400, errMsg);
