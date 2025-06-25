@@ -1,1 +1,2 @@
-# demos
+#WanderLust 
+It is a full-stack travel listing platform where users can discover, create, and review unique vacation stays from around the world. Built with Node.js, Express, MongoDB, and EJS, it offers a smooth and responsive user experience with features like user authentication, image uploads, interactive maps, and review management. Whether you're a traveler or a host, WanderLust makes finding or listing your next getaway easy and enjoyable.
