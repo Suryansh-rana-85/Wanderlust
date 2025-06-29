@@ -1,5 +1,10 @@
 const { cloudinary } = require("../cloudConfig.js");
 const Listing = require("../models/listing.js");
+// mapbox-geocoding
+const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
+const mapToken = process.env.MAP_TOKEN; // Access token
+const geocodingClient = mbxGeocoding({ accessToken: mapToken });
+
 
 // Index
 module.exports.index = async (req, res) => {
@@ -29,52 +34,26 @@ module.exports.showListing = async (req, res) => {
 };
 
 // Create 
-// module.exports.createListing = async (req, res, next) => {
-//     let url = req.file.path;
-//     let filename = req.file.filename;
-
-//     const newListing = new Listing(req.body.listing);
-//     newListing.owner = req.user._id; // add owner
-//     newListing.image[url] = { url, filename };
-//     await newListing.save();
-//     req.flash("success", "New Listing Created!");
-//     res.redirect("/listings");
-// // };
-// module.exports.createListing = async (req, res, next) => {
-//     const { url, filename } = req.file;
-
-//     const newListing = new Listing(req.body.listing);
-//     newListing.owner = req.user._id;
-//     newListing.image = { url, filename };
-//     await newListing.save();
-//     console.log(res);
-//     cloudinary.uploader.upload();
-
-//     req.flash("success", "New Listing Created!");
-//     res.redirect("/listings");
-// };
-// module.exports.createListing = async (req, res, next) => {
-//   const newListing = new Listing(req.body.listing);
-//   newListing.owner = req.user._id;
-
-//   if (req.file) {
-//     newListing.image = {
-//       url: req.file.path,       // Multer + Cloudinary automatically adds this
-//       filename: req.file.filename
-//     };
-//   }
-//   await newListing.save();
-//   req.flash("success", "New Listing Created!");
-//   res.redirect("/listings");
-// };
 module.exports.createListing = async (req, res) => {
+    // Map-Box
+    let response = await geocodingClient
+        .forwardGeocode({
+            query: req.body.listing.location,
+            limit: 1,
+        })
+        .send()
+
     let url = req.file.path;
     let filename = req.file.filename;
-
-    const newListing = new Listing( req.body.listing);
+    const newListing = new Listing(req.body.listing);
     newListing.owner = req.user._id;
     newListing.image = { url, filename };
-    await newListing.save();
+    // geocoding coordinates
+    newListing.geometry = response.body.features[0].geometry;
+
+    let savedListing = await newListing.save();
+    console.log(savedListing);
+    req.flash("success", "New Listing Created!");
     res.redirect("/listings");
 };
 
@@ -86,20 +65,28 @@ module.exports.renderEditForm = async (req, res) => {
         req.flash("error", "Listing you requested for does not exist!");
         return res.redirect("/listings");
     }
-    res.render("listings/edit.ejs", { listing });
+
+    let originalImageUrl = listing.image.url;
+    originalImageUrl = originalImageUrl.replace("/upload", "/upload/h_200,w_250");
+
+    res.render("listings/edit.ejs", { listing, originalImageUrl });
 };
 
 // Update
 module.exports.updateListing = async (req, res) => {
     let { id } = req.params;
-    const listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
-    // upload image in edit form
-    if(typeof req.file !== "undefined") {
-        listing.image = {
-            filename: req.file.filename,
-            url: req.file.path,
-        };
+    let listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
+    console.log(listing);
+    if (typeof req.file !== "undefined") {
+        let url = req.file.path;
+        let filename = req.file.filename;
+        listing.image = { url, filename };
+        // listing.image = {f
+        //     filename: req.file.filename,
+        //     url: req.file.path,
+        // };
         await listing.save();
+        console.log("This is working");
     }
     req.flash("success", "Listing Updated!");
     res.redirect(`/listings/${id}`);

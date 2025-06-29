@@ -11,6 +11,7 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate"); 
 const ExpressError = require("./utils/ExpressError.js");
 const session = require("express-session");
+const MongoStore = require('connect-mongo');
 const flash = require("connect-flash");
 
 // passport
@@ -25,8 +26,8 @@ const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
-// Connect mongoose
-const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
+// // Connect mongoose
+const dbUrl = process.env.ATLASDB_URL;
 main()
     .then(() => {
         console.log("connected to DB");
@@ -35,7 +36,7 @@ main()
         console.log(err);
     });
 async function main() {
-    await mongoose.connect(MONGO_URL);
+    await mongoose.connect(dbUrl);
 }
 
 // views and public 
@@ -50,9 +51,23 @@ app.use(methodOverride('_method'));
 // ejs-mate 
 app.engine('ejs', ejsMate); 
 
+// Session Store
+const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    crypto: {
+        secret: process.env.SECRET,
+    },
+    touchAfter: 24 * 3600,
+});
+
+store.on("error", () => {
+    console.log("ERROR in MONGO SESSION STORE", err);
+});
+
 // Session options
 const sessionOptions = {
-    secret: "mysupersecretcode",
+    store,
+    secret: process.env.SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -61,11 +76,6 @@ const sessionOptions = {
         httpOnly: true, 
     }
 };
-
-// Root route
-app.get("/", (req, res) => {
-    res.send("Hi, I am root");
-});
 
 // Middlewares
 app.use(session(sessionOptions));
@@ -99,19 +109,19 @@ app.use((req, res, next) => {
 //     res.send(registeredUser);
 // });
 
-// Routes
+// Use Routers
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter)
 app.use("/", userRouter);
 
-// 404 error
-app.all("/:any", (req, res, next) => {
-    next(new ExpressError(404, "Page Not Found!"));
-});
+// // 404 error
+// app.all('*', (req, res, next) => {
+//     next(new ExpressError(404, "Page Not Found!"));
+// });
 
 // Custom error handler
 app.use((err, req, res, next) => {
-    let { statusCode = 500, message = "Something went wrong!" } = err;
+    const { statusCode = 500, message = "Something went wrong!" } = err;
     res.status(statusCode).render("error.ejs", { err });
 });
 
