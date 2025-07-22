@@ -98,26 +98,15 @@ app.use((req, res, next) => {
     next();
 });
 
-// demo user, hashing algo = pdkdf2
-// app.get("/demouser", async(req, res) => {
-//     let fakeUser = new User({
-//         email: "student@gmail.com",
-//         username: "deltastudent"
-//     });
-//     // save user in database
-//     let registeredUser = await User.register(fakeUser, "helloworld");
-//     res.send(registeredUser);
-// });
-
 // Use Routers
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter)
 app.use("/", userRouter);
 
-// // 404 error
-// app.all('*', (req, res, next) => {
-//     next(new ExpressError(404, "Page Not Found!"));
-// });
+// 404 error
+app.all('*', (req, res, next) => {
+    next(new ExpressError(404, "Page Not Found!"));
+});
 
 // Custom error handler
 app.use((err, req, res, next) => {
